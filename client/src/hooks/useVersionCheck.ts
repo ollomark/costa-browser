@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNotifications } from './useNotifications';
 import { toast } from 'sonner';
 
-const CURRENT_VERSION = '1.2.0';
+const CURRENT_VERSION = '1.3.0';
 
 export function useVersionCheck() {
   const [hasUpdate, setHasUpdate] = useState(false);
@@ -44,6 +44,17 @@ export function useVersionCheck() {
       'Yeni Versiyon Mevcut! 🎉',
       `CostaBrowser ${version} sürümü yayınlandı. Yeni özellikler için sayfayı yenileyin.`
     );
+    
+    // Save to notification history
+    const notifications = JSON.parse(localStorage.getItem('pwa-browser-notifications') || '[]');
+    notifications.unshift({
+      id: Date.now().toString(),
+      title: 'Yeni Versiyon Mevcut! 🎉',
+      body: `CostaBrowser ${version} sürümü yayınlandı. Yeni özellikler için sayfayı yenileyin.`,
+      timestamp: Date.now(),
+      read: false,
+    });
+    localStorage.setItem('pwa-browser-notifications', JSON.stringify(notifications));
 
     // Show toast
     toast(`Yeni Versiyon: ${version}`, {

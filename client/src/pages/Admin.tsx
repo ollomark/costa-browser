@@ -3,11 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw, Image as ImageIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface SavedSite {
   id: string;
@@ -28,6 +29,24 @@ interface Notification {
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { sendTestNotification } = useNotifications();
+  const { isAuthenticated, loading, logout, requireAuth } = useAdminAuth();
+  
+  // Require authentication
+  useEffect(() => {
+    requireAuth();
+  }, [isAuthenticated, loading]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Yükleniyor...</p>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return null;
+  }
   const [sites, setSites] = useState<SavedSite[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   
@@ -41,12 +60,17 @@ export default function Admin() {
   const [notifBody, setNotifBody] = useState("");
   
   // Version management
-  const [currentVersion, setCurrentVersion] = useState("1.2.0");
+  const [currentVersion, setCurrentVersion] = useState("1.3.0");
   const [newVersion, setNewVersion] = useState("");
+  
+  // Icon management
+  const [iconUrl, setIconUrl] = useState("");
+  const [currentIcon, setCurrentIcon] = useState("/icon-192.png");
 
   useEffect(() => {
     loadSites();
     loadNotifications();
+    loadIcon();
   }, []);
 
   const loadSites = () => {
@@ -62,11 +86,31 @@ export default function Admin() {
       setNotifications(JSON.parse(stored));
     }
   };
+  
+  const loadIcon = () => {
+    const stored = localStorage.getItem("app-icon");
+    if (stored) {
+      setCurrentIcon(stored);
+    }
+  };
 
   const saveSites = (updatedSites: SavedSite[]) => {
     localStorage.setItem("pwa-browser-sites", JSON.stringify(updatedSites));
     setSites(updatedSites);
+    logAction("sites_updated", `Siteler güncellendi (${updatedSites.length} site)`);
     toast.success("Siteler güncellendi");
+  };
+  
+  const logAction = (action: string, description: string) => {
+    const logs = JSON.parse(localStorage.getItem("admin-logs") || "[]");
+    logs.unshift({
+      id: Date.now().toString(),
+      action,
+      description,
+      timestamp: Date.now(),
+      username: "admin",
+    });
+    localStorage.setItem("admin-logs", JSON.stringify(logs.slice(0, 100)));
   };
 
   const handleAddSite = () => {
@@ -139,6 +183,7 @@ export default function Admin() {
     // Send push notification
     await sendTestNotification(notifTitle, notifBody);
     
+    logAction("notification_sent", `Bildirim gönderildi: "${notifTitle}"`);
     toast.success("Bildirim gönderildi!");
     setNotifTitle("");
     setNotifBody("");
@@ -158,9 +203,47 @@ export default function Admin() {
       "Yeni Versiyon Mevcut!",
       `CostaBrowser ${newVersion} sürümüne güncellendi. Yeni özellikler için sayfayı yenileyin.`
     );
+    
+    // Save to notification history
+    const newNotif: Notification = {
+      id: Date.now().toString(),
+      title: "Yeni Versiyon Mevcut!",
+      body: `CostaBrowser ${newVersion} sürümüne güncellendi. Yeni özellikler için sayfayı yenileyin.`,
+      timestamp: Date.now(),
+      read: false,
+    };
+    const updatedNotifications = [newNotif, ...notifications];
+    localStorage.setItem("pwa-browser-notifications", JSON.stringify(updatedNotifications));
+    setNotifications(updatedNotifications);
 
+    logAction("version_updated", `Versiyon ${currentVersion} -> ${newVersion} güncellendi`);
     toast.success(`Versiyon ${newVersion} olarak güncellendi`);
     setNewVersion("");
+  };
+  
+  const handleIconUpdate = () => {
+    if (!iconUrl) {
+      toast.error("Lütfen icon URL'si girin");
+      return;
+    }
+    
+    try {
+      new URL(iconUrl); // Validate URL
+      localStorage.setItem("app-icon", iconUrl);
+      setCurrentIcon(iconUrl);
+      
+      // Update manifest dynamically
+      const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+      if (link) {
+        link.href = iconUrl;
+      }
+      
+      logAction("icon_updated", `Uygulama ikonu güncellendi`);
+      toast.success("Icon başarıyla güncellendi!");
+      setIconUrl("");
+    } catch (error) {
+      toast.error("Geçersiz URL formatı");
+    }
   };
 
   return (
@@ -176,15 +259,74 @@ export default function Admin() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold">Admin Panel</h1>
             <p className="text-xs text-muted-foreground">Site ve bildirim yönetimi</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={logout}
+          >
+            Çıkış Yap
+          </Button>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+        {/* Icon Management */}
+        <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+              <ImageIcon className="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Uygulama İkonu</h2>
+              <p className="text-sm text-muted-foreground">Uygulama ikonunu özelleştirin</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 border border-border/50">
+              <img
+                src={currentIcon}
+                alt="Current Icon"
+                className="w-16 h-16 rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.src = "/icon-192.png";
+                }}
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Mevcut İkon</p>
+                <p className="text-xs text-muted-foreground truncate">{currentIcon}</p>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="icon-url">Yeni İkon URL</Label>
+              <Input
+                id="icon-url"
+                value={iconUrl}
+                onChange={(e) => setIconUrl(e.target.value)}
+                placeholder="https://example.com/icon.png"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                192x192 veya 512x512 boyutunda PNG formatında olmalı
+              </p>
+            </div>
+            
+            <Button
+              onClick={handleIconUpdate}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            >
+              <ImageIcon className="w-4 h-4 mr-2" />
+              İkonu Güncelle
+            </Button>
+          </div>
+        </Card>
+
         {/* Version Management */}
         <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
           <div className="flex items-center gap-3 mb-4">

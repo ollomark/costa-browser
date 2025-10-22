@@ -12,6 +12,7 @@ import { useInitialSites } from "@/hooks/useInitialSites";
 import { NotificationPromptOnInstall } from "@/components/NotificationPromptOnInstall";
 import { AddSiteDrawer } from "@/components/AddSiteDrawer";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
+import { useAppReminder } from "@/hooks/useAppReminder";
 
 interface SavedSite {
   id: string;
@@ -33,6 +34,9 @@ export default function Home() {
   
   // Version check
   const { currentVersion } = useVersionCheck();
+  
+  // App reminders (5 min interval)
+  useAppReminder();
   
   // Notification count
   const [notificationCount, setNotificationCount] = useState(0);
