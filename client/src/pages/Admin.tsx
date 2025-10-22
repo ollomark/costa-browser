@@ -32,6 +32,8 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const { broadcastNotification } = useNotificationsBackend();
   const { data: deviceStats } = trpc.device.stats.useQuery();
+  const { data: versionData } = trpc.version.current.useQuery();
+  const updateVersionMutation = trpc.version.update.useMutation();
   const [sites, setSites] = useState<SavedSite[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   
@@ -45,8 +47,9 @@ export default function Admin() {
   const [notifBody, setNotifBody] = useState("");
   
   // Version management
-  const [currentVersion, setCurrentVersion] = useState("1.5.0");
+  const currentVersion = versionData?.version || "1.7.0";
   const [newVersion, setNewVersion] = useState("");
+  const [releaseNotes, setReleaseNotes] = useState("");
   
   // Notification delivery tracking
   const [lastDeliveryCount, setLastDeliveryCount] = useState(0);
@@ -163,17 +166,19 @@ export default function Admin() {
       return;
     }
 
-    localStorage.setItem("app-version", newVersion);
-    setCurrentVersion(newVersion);
+    try {
+      const result = await updateVersionMutation.mutateAsync({
+        version: newVersion,
+        releaseNotes: releaseNotes || undefined,
+      });
 
-    // Send update notification
-    await broadcastNotification(
-      "Yeni Versiyon Mevcut!",
-      `CostaBrowser ${newVersion} sürümüne güncellendi. Yeni özellikler için sayfayı yenileyin.`
-    );
-
-    toast.success(`Versiyon ${newVersion} olarak güncellendi`);
-    setNewVersion("");
+      toast.success(`Versiyon ${newVersion} olarak güncellendi! ${result.notificationsSent} cihaza bildirim gönderildi.`);
+      setNewVersion("");
+      setReleaseNotes("");
+    } catch (error) {
+      toast.error("Versiyon güncellenemedi");
+      console.error(error);
+    }
   };
 
   return (

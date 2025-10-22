@@ -1,29 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
+import { trpc } from "@/lib/trpc";
 
 export default function SiteViewer() {
   const [, params] = useRoute("/site/:id");
   const [, setLocation] = useLocation();
-  const [site, setSite] = useState<any>(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeError, setIframeError] = useState(false);
 
-  useEffect(() => {
-    if (!params?.id) return;
-
-    const stored = localStorage.getItem("pwa-browser-sites");
-    if (stored) {
-      try {
-        const sites = JSON.parse(stored);
-        const foundSite = sites.find((s: any) => s.id === params.id);
-        setSite(foundSite);
-      } catch (e) {
-        console.error("Failed to load site", e);
-      }
-    }
-  }, [params?.id]);
+  const siteId = params?.id ? parseInt(params.id) : 0;
+  const { data: site, isLoading } = trpc.site.get.useQuery({ id: siteId }, {
+    enabled: siteId > 0,
+  });
 
   const handleRefresh = () => {
     setIframeKey((prev) => prev + 1);
@@ -34,6 +24,16 @@ export default function SiteViewer() {
       window.open(site.url, "_blank");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Yükleniyor...</h2>
+        </div>
+      </div>
+    );
+  }
 
   if (!site) {
     return (

@@ -14,14 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
-interface SavedSite {
-  id: string;
-  url: string;
-  title: string;
-  favicon?: string;
-  addedAt: number;
-}
+
 
 interface AddSiteDrawerProps {
   onSiteAdded: () => void;
@@ -31,36 +26,37 @@ export function AddSiteDrawer({ onSiteAdded }: AddSiteDrawerProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
+  const addSiteMutation = trpc.site.add.useMutation();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title || !url) {
       toast.error("Lütfen tüm alanları doldurun");
       return;
     }
 
     try {
-      const urlObj = new URL(url);
+      let finalUrl = url.trim();
+      if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+        finalUrl = "https://" + finalUrl;
+      }
       
-      const newSite: SavedSite = {
-        id: Date.now().toString(),
-        url: url,
+      const urlObj = new URL(finalUrl);
+      const favicon = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
+
+      const result = await addSiteMutation.mutateAsync({
+        url: finalUrl,
         title: title,
-        favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`,
-        addedAt: Date.now(),
-      };
+        favicon: favicon,
+      });
 
-      const stored = localStorage.getItem("pwa-browser-sites");
-      const sites = stored ? JSON.parse(stored) : [];
-      sites.push(newSite);
-      localStorage.setItem("pwa-browser-sites", JSON.stringify(sites));
-
-      toast.success(`${title} eklendi!`);
+      toast.success(`${title} eklendi! ${result.notificationsSent} cihaza bildirim gönderildi.`);
       setTitle("");
       setUrl("");
       setOpen(false);
       onSiteAdded();
     } catch (error) {
-      toast.error("Geçersiz URL formatı");
+      toast.error("Site eklenemedi");
+      console.error(error);
     }
   };
 

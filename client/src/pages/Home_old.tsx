@@ -1,52 +1,120 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Globe, Trash2, ExternalLink, Settings, Moon, Sun, Bell } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Globe, Plus, Trash2, ExternalLink, Settings, Moon, Sun, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { SiteNotificationSettings } from "@/components/SiteNotificationSettings";
 import { useLocation } from "wouter";
+import { useInitialSites } from "@/hooks/useInitialSites";
 import { NotificationPromptOnInstall } from "@/components/NotificationPromptOnInstall";
 import { AddSiteDrawer } from "@/components/AddSiteDrawer";
-import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
-import { useState } from "react";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
+
+interface SavedSite {
+  id: string;
+  url: string;
+  title: string;
+  favicon?: string;
+  addedAt: number;
+}
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const { theme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
+  const [url, setUrl] = useState("");
+  const [savedSites, setSavedSites] = useState<SavedSite[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
   
-  // Fetch sites from database
-  const { data: sites, refetch: refetchSites } = trpc.site.list.useQuery();
-  const deleteSiteMutation = trpc.site.delete.useMutation();
+  // Initialize with default sites
+  useInitialSites();
   
-  // Fetch current version from database
-  const { data: versionData } = trpc.version.current.useQuery();
-  const currentVersion = versionData?.version || "1.7.0";
+  // Version check
+  const { currentVersion } = useVersionCheck();
   
-  // Notification count (still from localStorage for now)
+  // Notification count
   const [notificationCount, setNotificationCount] = useState(0);
 
-  const removeSite = async (id: number) => {
-    try {
-      await deleteSiteMutation.mutateAsync({ id });
-      toast.success("Site silindi");
-      refetchSites();
-    } catch (error) {
-      toast.error("Site silinemedi");
+  // Load saved sites from localStorage
+  useEffect(() => {
+    loadSites();
+    loadNotificationCount();
+  }, []);
+  
+  const loadSites = () => {
+    const stored = localStorage.getItem("pwa-browser-sites");
+    if (stored) {
+      setSavedSites(JSON.parse(stored));
+    }
+  };
+  
+  const loadNotificationCount = () => {
+    const stored = localStorage.getItem("pwa-browser-notifications");
+    if (stored) {
+      const notifications = JSON.parse(stored);
+      const unread = notifications.filter((n: any) => !n.read).length;
+      setNotificationCount(unread);
     }
   };
 
-  const openSite = (siteId: number) => {
+  // Save sites to localStorage
+  const saveSites = (sites: SavedSite[]) => {
+    localStorage.setItem("pwa-browser-sites", JSON.stringify(sites));
+    setSavedSites(sites);
+  };
+
+  const addSite = () => {
+    if (!url.trim()) return;
+
+    let finalUrl = url.trim();
+    if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+      finalUrl = "https://" + finalUrl;
+    }
+
+    try {
+      const urlObj = new URL(finalUrl);
+      const newSite: SavedSite = {
+        id: Date.now().toString(),
+        url: finalUrl,
+        title: urlObj.hostname.replace("www.", ""),
+        favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`,
+        addedAt: Date.now(),
+      };
+
+      saveSites([newSite, ...savedSites]);
+      setUrl("");
+      setIsAdding(false);
+      
+      // Send notification about new site
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Yeni Site Eklendi! 🎉', {
+          body: `${newSite.title} başarıyla eklendi`,
+          icon: newSite.favicon,
+          tag: `site-added-${newSite.id}`
+        });
+      }
+    } catch (e) {
+      alert("Geçerli bir URL giriniz");
+    }
+  };
+
+  const removeSite = (id: string) => {
+    saveSites(savedSites.filter((site) => site.id !== id));
+  };
+
+  const openSite = (siteId: string) => {
     setLocation(`/site/${siteId}`);
   };
 
   const openSiteExternal = (siteUrl: string) => {
     window.open(siteUrl, "_blank");
-  };
-
-  const handleSiteAdded = () => {
-    refetchSites();
   };
 
   return (
@@ -111,7 +179,46 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Add Site Section */}
         <Card className="p-6 mb-8 border-border/50 bg-card/50 backdrop-blur-sm">
-          <AddSiteDrawer onSiteAdded={handleSiteAdded} />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h2 className="text-lg font-semibold">Yeni Site Ekle</h2>
+          </div>
+
+          {isAdding ? (
+            <div className="space-y-3">
+              <Input
+                type="text"
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addSite()}
+                className="text-base"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={addSite}
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ekle
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAdding(false);
+                    setUrl("");
+                  }}
+                >
+                  İptal
+                </Button>
+              </div>
+            </div>
+          ) : (
+          <AddSiteDrawer onSiteAdded={loadSites} />
+          )}
         </Card>
 
         {/* Saved Sites */}
@@ -121,12 +228,12 @@ export default function Home() {
               <Globe className="w-5 h-5 text-emerald-400" />
               Kayıtlı Siteler
               <span className="text-sm text-muted-foreground font-normal">
-                ({sites?.length || 0})
+                ({savedSites.length})
               </span>
             </h2>
           </div>
 
-          {!sites || sites.length === 0 ? (
+          {savedSites.length === 0 ? (
             <Card className="p-12 text-center border-border/50 bg-card/30">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 flex items-center justify-center mx-auto mb-4">
                 <Globe className="w-8 h-8 text-muted-foreground" />
@@ -139,7 +246,7 @@ export default function Home() {
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {sites.map((site) => (
+              {savedSites.map((site) => (
                 <Card
                   key={site.id}
                   className="group hover:shadow-lg transition-all duration-200 border-border/50 bg-card/50 backdrop-blur-sm hover:border-emerald-500/30"
@@ -176,6 +283,7 @@ export default function Home() {
                       >
                         Aç
                       </Button>
+                      <SiteNotificationSettings siteId={site.id} siteName={site.title} />
                       <Button
                         variant="outline"
                         size="sm"
@@ -204,7 +312,7 @@ export default function Home() {
         <Card className="mt-8 p-6 border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-              <Globe className="w-5 h-5 text-white" />
+              <Plus className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold mb-1">Ana Ekrana Ekle</h3>
