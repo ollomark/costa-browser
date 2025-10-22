@@ -29,7 +29,7 @@ interface Notification {
 
 export default function Admin() {
   const [, setLocation] = useLocation();
-  const { sendTestNotification } = useNotifications();
+  const { sendTestNotification, stats, getStats } = useNotifications();
   const [sites, setSites] = useState<SavedSite[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   
@@ -43,13 +43,17 @@ export default function Admin() {
   const [notifBody, setNotifBody] = useState("");
   
   // Version management
-  const [currentVersion, setCurrentVersion] = useState("1.2.0");
+  const [currentVersion, setCurrentVersion] = useState("1.4.0");
   const [newVersion, setNewVersion] = useState("");
+  
+  // Notification delivery tracking
+  const [lastDeliveryCount, setLastDeliveryCount] = useState(0);
 
   useEffect(() => {
     loadSites();
     loadNotifications();
-  }, []);
+    getStats(); // Load notification stats
+  }, [getStats]);
 
   const loadSites = () => {
     const stored = localStorage.getItem("pwa-browser-sites");
@@ -139,9 +143,15 @@ export default function Admin() {
     setNotifications(updatedNotifications);
 
     // Send push notification
-    await sendTestNotification(notifTitle, notifBody);
+    const result = await sendTestNotification(notifTitle, notifBody);
     
-    toast.success("Bildirim gönderildi!");
+    if (result.success) {
+      setLastDeliveryCount(result.delivered);
+      toast.success(`Bildirim gönderildi! ${result.delivered} cihaza ulaştı.`);
+    } else {
+      toast.error("Bildirim gönderilemedi!");
+    }
+    
     setNotifTitle("");
     setNotifBody("");
   };
@@ -227,11 +237,35 @@ export default function Admin() {
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
               <Bell className="w-5 h-5 text-emerald-400" />
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-lg font-semibold">Bildirim Gönder</h2>
               <p className="text-sm text-muted-foreground">Tüm kullanıcılara bildirim</p>
             </div>
           </div>
+          
+          {/* Notification Stats */}
+          <div className="grid grid-cols-3 gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/50">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-emerald-400">{stats.totalDevices}</p>
+              <p className="text-xs text-muted-foreground">Toplam Cihaz</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-400">{stats.acceptedDevices}</p>
+              <p className="text-xs text-muted-foreground">Bildirim Açık</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-red-400">{stats.deniedDevices}</p>
+              <p className="text-xs text-muted-foreground">Bildirim Kapalı</p>
+            </div>
+          </div>
+          
+          {lastDeliveryCount > 0 && (
+            <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+              <p className="text-sm text-emerald-400">
+                ✅ Son bildirim <strong>{lastDeliveryCount} cihaza</strong> ulaştı
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             <div>
