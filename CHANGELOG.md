@@ -2,63 +2,6 @@
 
 All notable changes to CostaBrowser will be documented in this file.
 
-## [1.3.0] - 2025-01-22
-
-### Added
-- **Admin Login Sistemi**: Güvenli admin paneli erişimi
-  - Kullanıcı adı ve şifre ile giriş (admin/costa2025)
-  - 24 saatlik oturum süresi
-  - Otomatik oturum kontrolü
-  - `/admin/login` route'u ile erişilebilir
-
-- **Admin Loglama**: Tüm admin işlemlerinin kaydı
-  - Site ekleme/silme/güncelleme logları
-  - Bildirim gönderme logları
-  - Versiyon güncelleme logları
-  - Icon değiştirme logları
-  - Son 100 log kaydı tutulur
-
-- **Otomatik Güncelleme Bildirimi**: Versiyon değişikliklerinde otomatik bildirim
-  - Admin panelden versiyon güncellendiğinde push notification
-  - Bildirim merkezi geçmişine otomatik kayıt
-  - 30 dakikada bir otomatik versiyon kontrolü
-  - Toast notification ile güncelleme seçeneği
-
-- **5 Dakikalık Hatırlatıcılar**: Periyodik uygulama hatırlatıcıları
-  - Ayarlardan etkinleştirilebilir/kapatılabilir
-  - Her 5 dakikada bir rastgele hatırlatıcı mesajı
-  - 4 farklı hatırlatıcı mesajı
-  - Bildirim geçmişine otomatik kayıt
-
-- **Icon Özelleştirme**: Admin panelden uygulama ikonu değiştirme
-  - URL ile yeni icon yükleme
-  - Mevcut icon önizlemesi
-  - Dinamik favicon güncelleme
-  - 192x192 veya 512x512 boyut desteği
-
-### Changed
-- Admin panel artık login gerektiriyor
-- Versiyon numarası 1.2.0 → 1.3.0
-- Footer'da versiyon bilgisi 1.3.0 olarak güncellendi
-- Tüm admin işlemleri loglanıyor
-
-### Security
-- Admin paneline erişim için authentication eklendi
-- Session-based oturum yönetimi
-- Otomatik oturum sona erme (24 saat)
-- Başarısız giriş denemeleri loglanıyor
-
-### Technical Details
-- New pages: `AdminLogin.tsx`
-- New hooks: `useAdminAuth.ts`, `useAppReminder.ts`
-- Enhanced: `useVersionCheck.ts` (auto notification)
-- Admin session management with localStorage
-- Admin action logging system (last 100 logs)
-- 5-minute interval reminder system
-- Dynamic icon update functionality
-
----
-
 ## [1.2.0] - 2025-01-22
 
 ### Added

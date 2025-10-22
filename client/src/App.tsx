@@ -9,7 +9,6 @@ import SiteViewer from "./pages/SiteViewer";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
-import AdminLogin from "./pages/AdminLogin";
 
 function Router() {
   return (
@@ -19,7 +18,6 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/notifications" component={Notifications} />
-      <Route path="/admin/login" component={AdminLogin} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

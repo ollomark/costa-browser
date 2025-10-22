@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useAppReminder } from "@/hooks/useAppReminder";
 import { ArrowLeft, Bell, BellOff, Send } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -13,11 +12,9 @@ import { toast } from "sonner";
 export default function Settings() {
   const [, setLocation] = useLocation();
   const { permission, isSupported, requestPermission, sendTestNotification } = useNotifications();
-  const { enableReminders, disableReminders, isEnabled: isRemindersEnabled } = useAppReminder();
   const [testTitle, setTestTitle] = useState("CostaBrowser");
   const [testBody, setTestBody] = useState("Bu bir test bildirimidir!");
   const [isEnabled, setIsEnabled] = useState(permission === 'granted');
-  const [remindersOn, setRemindersOn] = useState(isRemindersEnabled());
 
   const handleToggleNotifications = async (checked: boolean) => {
     if (checked && permission !== 'granted') {
@@ -140,36 +137,6 @@ export default function Settings() {
                     'Artık bildirim alabilirsiniz.'}
                 </p>
               </div>
-
-              {/* Reminders Toggle */}
-              {permission === 'granted' && (
-                <div className="p-4 rounded-lg border border-border/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex-1">
-                      <Label htmlFor="reminders-toggle" className="text-sm font-medium cursor-pointer">
-                        5 Dakikalık Hatırlatıcılar
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Her 5 dakikada bir uygulama hatırlatıcısı alın
-                      </p>
-                    </div>
-                    <Switch
-                      id="reminders-toggle"
-                      checked={remindersOn}
-                      onCheckedChange={(checked) => {
-                        setRemindersOn(checked);
-                        if (checked) {
-                          enableReminders();
-                          toast.success("Hatırlatıcılar etkinleştirildi");
-                        } else {
-                          disableReminders();
-                          toast.info("Hatırlatıcılar kapatıldı");
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Test Notification */}
               {permission === 'granted' && (
