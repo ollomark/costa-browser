@@ -7,7 +7,8 @@ import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw, Edit } from "lucide-rea
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationsBackend } from "@/hooks/useNotificationsBackend";
+import { trpc } from "@/lib/trpc";
 import { AdminLoginGuard } from "@/components/AdminLoginGuard";
 import { SiteDrawer } from "@/components/SiteDrawer";
 
@@ -29,7 +30,8 @@ interface Notification {
 
 export default function Admin() {
   const [, setLocation] = useLocation();
-  const { sendTestNotification, stats, getStats } = useNotifications();
+  const { broadcastNotification } = useNotificationsBackend();
+  const { data: deviceStats } = trpc.device.stats.useQuery();
   const [sites, setSites] = useState<SavedSite[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   
@@ -52,8 +54,7 @@ export default function Admin() {
   useEffect(() => {
     loadSites();
     loadNotifications();
-    getStats(); // Load notification stats
-  }, [getStats]);
+  }, []);
 
   const loadSites = () => {
     const stored = localStorage.getItem("pwa-browser-sites");
@@ -143,11 +144,11 @@ export default function Admin() {
     setNotifications(updatedNotifications);
 
     // Send push notification
-    const result = await sendTestNotification(notifTitle, notifBody);
+    const result = await broadcastNotification(notifTitle, notifBody);
     
-    if (result.success) {
-      setLastDeliveryCount(result.delivered);
-      toast.success(`Bildirim gönderildi! ${result.delivered} cihaza ulaştı.`);
+    if (result) {
+      setLastDeliveryCount(result.deliveredCount);
+      toast.success(`Bildirim gönderildi! ${result.deliveredCount} cihaza ulaştı.`);
     } else {
       toast.error("Bildirim gönderilemedi!");
     }
@@ -166,7 +167,7 @@ export default function Admin() {
     setCurrentVersion(newVersion);
 
     // Send update notification
-    await sendTestNotification(
+    await broadcastNotification(
       "Yeni Versiyon Mevcut!",
       `CostaBrowser ${newVersion} sürümüne güncellendi. Yeni özellikler için sayfayı yenileyin.`
     );
@@ -246,15 +247,15 @@ export default function Admin() {
           {/* Notification Stats */}
           <div className="grid grid-cols-3 gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/50">
             <div className="text-center">
-              <p className="text-2xl font-bold text-emerald-400">{stats.totalDevices}</p>
+              <p className="text-2xl font-bold text-emerald-400">{deviceStats?.totalDevices || 0}</p>
               <p className="text-xs text-muted-foreground">Toplam Cihaz</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-400">{stats.acceptedDevices}</p>
+              <p className="text-2xl font-bold text-green-400">{deviceStats?.notificationEnabled || 0}</p>
               <p className="text-xs text-muted-foreground">Bildirim Açık</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-red-400">{stats.deniedDevices}</p>
+              <p className="text-2xl font-bold text-red-400">{deviceStats?.notificationDisabled || 0}</p>
               <p className="text-xs text-muted-foreground">Bildirim Kapalı</p>
             </div>
           </div>

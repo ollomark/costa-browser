@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationsBackend } from "@/hooks/useNotificationsBackend";
 import { ArrowLeft, Bell, BellOff, Send } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -11,10 +11,10 @@ import { toast } from "sonner";
 
 export default function Settings() {
   const [, setLocation] = useLocation();
-  const { permission, isSupported, requestPermission, sendTestNotification } = useNotifications();
+  const { permission, requestPermission, sendTestNotification, isEnabled: notifEnabled } = useNotificationsBackend();
   const [testTitle, setTestTitle] = useState("CostaBrowser");
   const [testBody, setTestBody] = useState("Bu bir test bildirimidir!");
-  const [isEnabled, setIsEnabled] = useState(permission === 'granted');
+  const [isEnabled, setIsEnabled] = useState(notifEnabled);
 
   const handleToggleNotifications = async (checked: boolean) => {
     if (checked && permission !== 'granted') {
@@ -76,7 +76,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {!isSupported ? (
+          {!('Notification' in window) ? (
             <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
               <div className="flex items-start gap-3">
                 <BellOff className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
