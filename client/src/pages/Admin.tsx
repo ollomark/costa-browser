@@ -3,11 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw, Edit } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useNotifications } from "@/hooks/useNotifications";
+import { AdminLoginGuard } from "@/components/AdminLoginGuard";
+import { SiteDrawer } from "@/components/SiteDrawer";
 
 interface SavedSite {
   id: string;
@@ -164,6 +166,7 @@ export default function Admin() {
   };
 
   return (
+    <AdminLoginGuard>
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
@@ -401,6 +404,7 @@ export default function Admin() {
         </Card>
       </main>
     </div>
+    </AdminLoginGuard>
   );
 }
 
