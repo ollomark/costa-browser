@@ -1,22 +1,289 @@
 import { Button } from "@/components/ui/button";
-import { APP_LOGO, APP_TITLE } from "@/const";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Globe, Plus, Trash2, ExternalLink, Settings, Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import { InstallPrompt } from "@/components/InstallPrompt";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { useLocation } from "wouter";
 
-/**
- * All content in this page are only for example, delete if unneeded
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
- */
+interface SavedSite {
+  id: string;
+  url: string;
+  title: string;
+  favicon?: string;
+  addedAt: number;
+}
+
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
+  const [, setLocation] = useLocation();
+  const [url, setUrl] = useState("");
+  const [savedSites, setSavedSites] = useState<SavedSite[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
 
-  // Use APP_LOGO (as image src) and APP_TITLE if needed
+  // Load saved sites from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("pwa-browser-sites");
+    if (stored) {
+      try {
+        setSavedSites(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to load saved sites", e);
+      }
+    }
+  }, []);
+
+  // Save sites to localStorage
+  const saveSites = (sites: SavedSite[]) => {
+    localStorage.setItem("pwa-browser-sites", JSON.stringify(sites));
+    setSavedSites(sites);
+  };
+
+  const addSite = () => {
+    if (!url.trim()) return;
+
+    let finalUrl = url.trim();
+    if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+      finalUrl = "https://" + finalUrl;
+    }
+
+    try {
+      const urlObj = new URL(finalUrl);
+      const newSite: SavedSite = {
+        id: Date.now().toString(),
+        url: finalUrl,
+        title: urlObj.hostname.replace("www.", ""),
+        favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`,
+        addedAt: Date.now(),
+      };
+
+      saveSites([newSite, ...savedSites]);
+      setUrl("");
+      setIsAdding(false);
+    } catch (e) {
+      alert("Geçerli bir URL giriniz");
+    }
+  };
+
+  const removeSite = (id: string) => {
+    saveSites(savedSites.filter((site) => site.id !== id));
+  };
+
+  const openSite = (siteId: string) => {
+    setLocation(`/site/${siteId}`);
+  };
+
+  const openSiteExternal = (siteUrl: string) => {
+    window.open(siteUrl, "_blank");
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        Example Page
-        <Button variant="default">Example Button</Button>
+    <>
+      <InstallPrompt />
+      <OfflineIndicator />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header */}
+      <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                PWA Browser
+              </h1>
+              <p className="text-xs text-muted-foreground">Web sitelerinizi uygulama gibi kullanın</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Add Site Section */}
+        <Card className="p-6 mb-8 border-border/50 bg-card/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h2 className="text-lg font-semibold">Yeni Site Ekle</h2>
+          </div>
+
+          {isAdding ? (
+            <div className="space-y-3">
+              <Input
+                type="text"
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addSite()}
+                className="text-base"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={addSite}
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ekle
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAdding(false);
+                    setUrl("");
+                  }}
+                >
+                  İptal
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              onClick={() => setIsAdding(true)}
+              variant="outline"
+              className="w-full border-dashed border-2 h-12 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Site Adresi Girin
+            </Button>
+          )}
+        </Card>
+
+        {/* Saved Sites */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-emerald-400" />
+              Kayıtlı Siteler
+              <span className="text-sm text-muted-foreground font-normal">
+                ({savedSites.length})
+              </span>
+            </h2>
+          </div>
+
+          {savedSites.length === 0 ? (
+            <Card className="p-12 text-center border-border/50 bg-card/30">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 flex items-center justify-center mx-auto mb-4">
+                <Globe className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">Henüz site eklemediniz</h3>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                Sık kullandığınız web sitelerini ekleyerek hızlı erişim sağlayın.
+                Siteler native uygulama gibi açılacak.
+              </p>
+            </Card>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {savedSites.map((site) => (
+                <Card
+                  key={site.id}
+                  className="group hover:shadow-lg transition-all duration-200 border-border/50 bg-card/50 backdrop-blur-sm hover:border-emerald-500/30"
+                >
+                  <div className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {site.favicon ? (
+                          <img
+                            src={site.favicon}
+                            alt={site.title}
+                            className="w-8 h-8"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <Globe className="w-6 h-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate mb-1">{site.title}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {site.url}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => openSite(site.id)}
+                        className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600"
+                        size="sm"
+                      >
+                        Aç
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openSiteExternal(site.url)}
+                        className="hover:bg-muted"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSite(site.id)}
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Install PWA Prompt */}
+        <Card className="mt-8 p-6 border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+              <Plus className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-1">Ana Ekrana Ekle</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Bu uygulamayı telefonunuzun ana ekranına ekleyerek native uygulama gibi kullanabilirsiniz.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tarayıcınızın menüsünden "Ana ekrana ekle" seçeneğini kullanın.
+              </p>
+            </div>
+          </div>
+        </Card>
       </main>
-    </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40 mt-16 py-8">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>PWA Browser - Web sitelerinizi native uygulama gibi kullanın</p>
+        </div>
+      </footer>
+      </div>
+    </>
   );
 }
+
