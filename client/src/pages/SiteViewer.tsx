@@ -8,6 +8,7 @@ export default function SiteViewer() {
   const [, setLocation] = useLocation();
   const [site, setSite] = useState<any>(null);
   const [iframeKey, setIframeKey] = useState(0);
+  const [iframeError, setIframeError] = useState(false);
 
   useEffect(() => {
     if (!params?.id) return;
@@ -88,13 +89,28 @@ export default function SiteViewer() {
 
       {/* Iframe */}
       <div className="flex-1 relative">
+        {iframeError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/95 z-10">
+            <div className="text-center max-w-md px-4">
+              <div className="text-6xl mb-4">🚫</div>
+              <h2 className="text-xl font-semibold mb-2">Site Yüklenemedi</h2>
+              <p className="text-muted-foreground mb-4">
+                Bu site iframe içinde görüntülenmeyi engelliyor.
+              </p>
+              <Button onClick={handleOpenExternal} size="lg">
+                Harici Tarayıcıda Aç
+              </Button>
+            </div>
+          </div>
+        )}
         <iframe
           key={iframeKey}
           src={site.url}
           className="w-full h-full border-0"
           title={site.title}
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
-          allow="geolocation; microphone; camera"
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-top-navigation allow-downloads"
+          allow="geolocation; microphone; camera; payment; autoplay"
+          onError={() => setIframeError(true)}
         />
       </div>
     </div>

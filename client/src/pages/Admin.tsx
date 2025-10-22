@@ -43,7 +43,7 @@ export default function Admin() {
   const [notifBody, setNotifBody] = useState("");
   
   // Version management
-  const [currentVersion, setCurrentVersion] = useState("1.4.0");
+  const [currentVersion, setCurrentVersion] = useState("1.5.0");
   const [newVersion, setNewVersion] = useState("");
   
   // Notification delivery tracking

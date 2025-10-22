@@ -86,6 +86,15 @@ export default function Home() {
       saveSites([newSite, ...savedSites]);
       setUrl("");
       setIsAdding(false);
+      
+      // Send notification about new site
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Yeni Site Eklendi! 🎉', {
+          body: `${newSite.title} başarıyla eklendi`,
+          icon: newSite.favicon,
+          tag: `site-added-${newSite.id}`
+        });
+      }
     } catch (e) {
       alert("Geçerli bir URL giriniz");
     }

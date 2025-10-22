@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNotifications } from './useNotifications';
 import { toast } from 'sonner';
 
-const CURRENT_VERSION = '1.2.0';
+const CURRENT_VERSION = '1.5.0';
 
 export function useVersionCheck() {
   const [hasUpdate, setHasUpdate] = useState(false);
