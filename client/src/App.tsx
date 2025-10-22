@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import SiteViewer from "./pages/SiteViewer";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
+import Notifications from "./pages/Notifications";
 
 function Router() {
   return (
@@ -14,6 +16,8 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path="/site/:id" component={SiteViewer} />
       <Route path="/settings" component={Settings} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/notifications" component={Notifications} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

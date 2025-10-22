@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Globe, Plus, Trash2, ExternalLink, Settings, Moon, Sun } from "lucide-react";
+import { Globe, Plus, Trash2, ExternalLink, Settings, Moon, Sun, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -10,6 +10,8 @@ import { SiteNotificationSettings } from "@/components/SiteNotificationSettings"
 import { useLocation } from "wouter";
 import { useInitialSites } from "@/hooks/useInitialSites";
 import { NotificationPromptOnInstall } from "@/components/NotificationPromptOnInstall";
+import { AddSiteDrawer } from "@/components/AddSiteDrawer";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 
 interface SavedSite {
   id: string;
@@ -28,18 +30,34 @@ export default function Home() {
   
   // Initialize with default sites
   useInitialSites();
+  
+  // Version check
+  const { currentVersion } = useVersionCheck();
+  
+  // Notification count
+  const [notificationCount, setNotificationCount] = useState(0);
 
   // Load saved sites from localStorage
   useEffect(() => {
+    loadSites();
+    loadNotificationCount();
+  }, []);
+  
+  const loadSites = () => {
     const stored = localStorage.getItem("pwa-browser-sites");
     if (stored) {
-      try {
-        setSavedSites(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to load saved sites", e);
-      }
+      setSavedSites(JSON.parse(stored));
     }
-  }, []);
+  };
+  
+  const loadNotificationCount = () => {
+    const stored = localStorage.getItem("pwa-browser-notifications");
+    if (stored) {
+      const notifications = JSON.parse(stored);
+      const unread = notifications.filter((n: any) => !n.read).length;
+      setNotificationCount(unread);
+    }
+  };
 
   // Save sites to localStorage
   const saveSites = (sites: SavedSite[]) => {
@@ -121,6 +139,19 @@ export default function Home() {
             <Button 
               variant="ghost" 
               size="icon" 
+              className="rounded-full relative"
+              onClick={() => setLocation("/notifications")}
+            >
+              <Bell className="w-5 h-5" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
               className="rounded-full"
               onClick={() => setLocation("/settings")}
             >
@@ -172,14 +203,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <Button
-              onClick={() => setIsAdding(true)}
-              variant="outline"
-              className="w-full border-dashed border-2 h-12 hover:border-emerald-500/50 hover:bg-emerald-500/5"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Site Adresi Girin
-            </Button>
+          <AddSiteDrawer onSiteAdded={loadSites} />
           )}
         </Card>
 
@@ -291,8 +315,18 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border/40 mt-16 py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground space-y-2">
           <p>CostaBrowser - Web sitelerinizi native uygulama gibi kullanın</p>
+          <p className="text-xs flex items-center justify-center gap-2">
+            <span>Versiyon {currentVersion}</span>
+            <span>•</span>
+            <button 
+              onClick={() => setLocation("/admin")} 
+              className="hover:text-foreground transition-colors"
+            >
+              Admin Panel
+            </button>
+          </p>
         </div>
       </footer>
       </div>

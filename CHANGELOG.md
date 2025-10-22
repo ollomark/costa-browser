@@ -2,6 +2,57 @@
 
 All notable changes to CostaBrowser will be documented in this file.
 
+## [1.2.0] - 2025-01-22
+
+### Added
+- **Admin Panel**: Dinamik site ve bildirim yönetimi
+  - Site ekleme, düzenleme ve silme
+  - Tüm kullanıcılara bildirim gönderme
+  - Versiyon güncelleme ve otomatik bildirim
+  - Bildirim geçmişi görüntüleme
+  - `/admin` route'u ile erişilebilir
+
+- **Bildirim Merkezi**: Geçmiş bildirimleri görüntüleme
+  - Tüm bildirimlerin listesi
+  - Okundu/okunmadı durumu
+  - Bildirimleri silme ve temizleme
+  - Header'da bildirim sayacı (badge)
+  - `/notifications` route'u ile erişilebilir
+
+- **Versiyon Kontrolü**: Otomatik güncelleme sistemi
+  - Admin panelden versiyon güncelleme
+  - Otomatik güncelleme bildirimi (push + toast)
+  - 30 dakikada bir otomatik kontrol
+  - Kullanıcıya güncelleme seçeneği sunma
+
+- **Modal Site Ekleme**: Drawer (aşağıdan açılan modal)
+  - Modern drawer UI ile site ekleme
+  - Aşağı sürükleyerek kapatma
+  - Daha iyi mobil deneyim
+  - Otomatik favicon çekme
+
+- **Versiyon Bilgisi**: Footer'da versiyon gösterimi
+  - Mevcut versiyon numarası
+  - Admin panel linkı
+  - Kolay erişim
+
+### Changed
+- Site ekleme butonu drawer olarak yeniden tasarlandı
+- Header'a bildirim zili ikonu eklendi (okunmamış sayısı ile)
+- Footer tasarımı güncellendi (versiyon + admin link)
+- Bildirimler artık localStorage'da saklanıyor
+
+### Technical Details
+- Version: 1.1.0 → 1.2.0
+- New pages: `Admin.tsx`, `Notifications.tsx`
+- New components: `AddSiteDrawer.tsx`
+- New hooks: `useVersionCheck.ts`
+- New routes: `/admin`, `/notifications`
+- Enhanced notification system with history
+- Automatic version checking (30 min interval)
+
+---
+
 ## [1.1.0] - 2025-01-22
 
 ### Added
