@@ -80,7 +80,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('PWA Browser', options)
+    self.registration.showNotification('CostaBrowser', options)
   );
 });
 

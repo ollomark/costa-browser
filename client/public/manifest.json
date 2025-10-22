@@ -1,6 +1,6 @@
 {
-  "name": "PWA Browser - Native Web App",
-  "short_name": "PWA Browser",
+  "name": "CostaBrowser - Native Web App",
+  "short_name": "CostaBrowser",
   "description": "Web sitelerinizi native uygulama gibi kullanın",
   "start_url": "/",
   "display": "standalone",

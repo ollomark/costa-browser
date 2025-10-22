@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export default function Settings() {
   const [, setLocation] = useLocation();
   const { permission, isSupported, requestPermission, sendTestNotification } = useNotifications();
-  const [testTitle, setTestTitle] = useState("PWA Browser");
+  const [testTitle, setTestTitle] = useState("CostaBrowser");
   const [testBody, setTestBody] = useState("Bu bir test bildirimidir!");
   const [isEnabled, setIsEnabled] = useState(permission === 'granted');
 
@@ -147,14 +147,14 @@ export default function Settings() {
                   </h3>
                   <div className="space-y-3">
                     <div>
-                      <Label htmlFor="test-title" className="text-sm">Başlık</Label>
-                      <Input
-                        id="test-title"
-                        value={testTitle}
-                        onChange={(e) => setTestTitle(e.target.value)}
-                        placeholder="Bildirim başlığı"
-                        className="mt-1"
-                      />
+                  <Label htmlFor="test-title" className="text-sm">Başlık</Label>
+                  <Input
+                    id="test-title"
+                    value={testTitle}
+                    onChange={(e) => setTestTitle(e.target.value)}
+                    placeholder="Bildirim başlığı"
+                    className="mt-1"
+                  />
                     </div>
                     <div>
                       <Label htmlFor="test-body" className="text-sm">İçerik</Label>

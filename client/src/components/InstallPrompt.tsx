@@ -33,7 +33,7 @@ export function InstallPrompt() {
         <div className="flex-1">
           <h3 className="font-semibold mb-1">Uygulamayı Yükle</h3>
           <p className="text-sm text-muted-foreground mb-3">
-            PWA Browser'ı cihazınıza yükleyerek daha hızlı erişim sağlayın.
+            CostaBrowser'ı cihazınıza yükleyerek daha hızlı erişim sağlayın.
           </p>
           <Button
             onClick={handleInstall}

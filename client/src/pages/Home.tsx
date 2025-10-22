@@ -8,6 +8,8 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SiteNotificationSettings } from "@/components/SiteNotificationSettings";
 import { useLocation } from "wouter";
+import { useInitialSites } from "@/hooks/useInitialSites";
+import { NotificationPromptOnInstall } from "@/components/NotificationPromptOnInstall";
 
 interface SavedSite {
   id: string;
@@ -23,6 +25,9 @@ export default function Home() {
   const [url, setUrl] = useState("");
   const [savedSites, setSavedSites] = useState<SavedSite[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  
+  // Initialize with default sites
+  useInitialSites();
 
   // Load saved sites from localStorage
   useEffect(() => {
@@ -84,6 +89,7 @@ export default function Home() {
     <>
       <InstallPrompt />
       <OfflineIndicator />
+      <NotificationPromptOnInstall />
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
@@ -93,9 +99,9 @@ export default function Home() {
               <Globe className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                PWA Browser
-              </h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              CostaBrowser
+            </h1>
               <p className="text-xs text-muted-foreground">Web sitelerinizi uygulama gibi kullanın</p>
             </div>
           </div>
@@ -286,7 +292,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border/40 mt-16 py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>PWA Browser - Web sitelerinizi native uygulama gibi kullanın</p>
+          <p>CostaBrowser - Web sitelerinizi native uygulama gibi kullanın</p>
         </div>
       </footer>
       </div>
