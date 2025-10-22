@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { SiteNotificationSettings } from "@/components/SiteNotificationSettings";
 import { useLocation } from "wouter";
 
 interface SavedSite {
@@ -111,7 +112,12 @@ export default function Home() {
                 <Moon className="w-5 h-5" />
               )}
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full"
+              onClick={() => setLocation("/settings")}
+            >
               <Settings className="w-5 h-5" />
             </Button>
           </div>
@@ -233,6 +239,7 @@ export default function Home() {
                       >
                         Aç
                       </Button>
+                      <SiteNotificationSettings siteId={site.id} siteName={site.title} />
                       <Button
                         variant="outline"
                         size="sm"
