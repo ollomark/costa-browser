@@ -36,6 +36,7 @@ export const devices = mysqlTable("devices", {
   id: int("id").autoincrement().primaryKey(),
   deviceId: varchar("deviceId", { length: 255 }).notNull().unique(),
   notificationEnabled: int("notificationEnabled").default(0).notNull(), // 0 = disabled, 1 = enabled
+  pushSubscription: text("pushSubscription"), // JSON string of push subscription
   userAgent: text("userAgent"),
   lastSeen: timestamp("lastSeen").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

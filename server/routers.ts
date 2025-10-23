@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
+import { sendPushNotificationToDevices, getVapidPublicKey } from "./pushService";
 import { upsertDevice, getDeviceStats, insertNotification, getAllDevices, getNotifications } from "./deviceDb";
 import { insertSite, getAllSites, getSite, deleteSite, updateSite } from "./siteDb";
 import { insertVersion, getCurrentVersion, getAllVersions } from "./versionDb";
@@ -27,6 +28,7 @@ export const appRouter = router({
         z.object({
           deviceId: z.string(),
           notificationEnabled: z.boolean(),
+          pushSubscription: z.string().optional(), // JSON string
           userAgent: z.string().optional(),
         })
       )
@@ -34,6 +36,7 @@ export const appRouter = router({
         await upsertDevice({
           deviceId: input.deviceId,
           notificationEnabled: input.notificationEnabled ? 1 : 0,
+          pushSubscription: input.pushSubscription,
           userAgent: input.userAgent,
         });
         return { success: true };
@@ -57,23 +60,52 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        // Get all devices with notifications enabled
+        // Get all devices with notifications enabled and push subscriptions
         const devices = await getAllDevices();
-        const enabledDevices = devices.filter((d) => d.notificationEnabled === 1);
+        const enabledDevices = devices.filter(
+          (d) => d.notificationEnabled === 1 && d.pushSubscription
+        );
+
+        // Parse push subscriptions
+        const subscriptions = enabledDevices
+          .map((d) => {
+            try {
+              return JSON.parse(d.pushSubscription!);
+            } catch (e) {
+              console.error(`[Push] Invalid subscription for device ${d.deviceId}`);
+              return null;
+            }
+          })
+          .filter((s) => s !== null);
+
+        // Send push notifications
+        let deliveredCount = 0;
+        if (subscriptions.length > 0) {
+          const result = await sendPushNotificationToDevices(subscriptions, {
+            title: input.title,
+            body: input.body,
+          });
+          deliveredCount = result.success;
+        }
 
         // Store notification in database
         await insertNotification({
           title: input.title,
           body: input.body,
-          deliveredCount: enabledDevices.length,
+          deliveredCount,
         });
 
         return {
           success: true,
-          deliveredCount: enabledDevices.length,
+          deliveredCount,
+          totalDevices: enabledDevices.length,
           deviceIds: enabledDevices.map((d) => d.deviceId),
         };
       }),
+
+    vapidPublicKey: publicProcedure.query(() => {
+      return { publicKey: getVapidPublicKey() };
+    }),
   }),
 
   site: router({

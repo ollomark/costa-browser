@@ -68,19 +68,35 @@ self.addEventListener('fetch', (event) => {
 
 // Push notification event
 self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data ? event.data.text() : 'Yeni bildirim',
+  let payload = {
+    title: 'CostaBrowser',
+    body: 'Yeni bildirim',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
+    url: '/'
+  };
+
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch (e) {
+      payload.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon || '/icon-192.png',
+    badge: payload.badge || '/icon-192.png',
     vibrate: [100, 50, 100],
     data: {
+      url: payload.url || '/',
       dateOfArrival: Date.now(),
-      primaryKey: 1
     }
   };
 
   event.waitUntil(
-    self.registration.showNotification('CostaBrowser', options)
+    self.registration.showNotification(payload.title, options)
   );
 });
 

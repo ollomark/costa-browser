@@ -7,6 +7,7 @@ export function useNotificationsBackend() {
   
   const registerDevice = trpc.device.register.useMutation();
   const sendNotification = trpc.notification.send.useMutation();
+  const { data: vapidData } = trpc.notification.vapidPublicKey.useQuery();
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -22,11 +23,7 @@ export function useNotificationsBackend() {
       
       // Register device on load if notification is enabled
       if (Notification.permission === 'granted') {
-        registerDevice.mutate({
-          deviceId: storedDeviceId,
-          notificationEnabled: true,
-          userAgent: navigator.userAgent,
-        });
+        subscribeToPush(storedDeviceId);
       }
     }
   }, []);
@@ -41,12 +38,8 @@ export function useNotificationsBackend() {
       setPermission(result);
       
       if (result === 'granted' && deviceId) {
-        // Register device with backend
-        await registerDevice.mutateAsync({
-          deviceId,
-          notificationEnabled: true,
-          userAgent: navigator.userAgent,
-        });
+        // Subscribe to push and register device
+        await subscribeToPush(deviceId);
       }
       
       return result === 'granted';
@@ -109,6 +102,41 @@ export function useNotificationsBackend() {
     }
   };
 
+  const subscribeToPush = async (devId: string) => {
+    try {
+      if (!('serviceWorker' in navigator) || !vapidData?.publicKey) {
+        console.warn('[Push] Service worker or VAPID key not available');
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Check if already subscribed
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        // Subscribe to push
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
+        });
+        console.log('[Push] Subscribed to push notifications');
+      }
+
+      // Register device with push subscription
+      await registerDevice.mutateAsync({
+        deviceId: devId,
+        notificationEnabled: true,
+        pushSubscription: JSON.stringify(subscription.toJSON()),
+        userAgent: navigator.userAgent,
+      });
+      
+      console.log('[Push] Device registered with backend');
+    } catch (error) {
+      console.error('[Push] Failed to subscribe:', error);
+    }
+  };
+
   return {
     permission,
     requestPermission,
@@ -116,5 +144,19 @@ export function useNotificationsBackend() {
     broadcastNotification,
     isEnabled: permission === 'granted',
   };
+}
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }
 
