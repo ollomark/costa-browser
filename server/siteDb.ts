@@ -25,7 +25,14 @@ export async function getAllSites() {
     return [];
   }
 
-  return await db.select().from(sites).orderBy(sites.addedAt);
+  try {
+    const result = await db.select().from(sites);
+    console.log('[Database] getAllSites result:', result);
+    return result;
+  } catch (error) {
+    console.error('[Database] Failed to get sites:', error);
+    return [];
+  }
 }
 
 export async function getSite(id: number) {
