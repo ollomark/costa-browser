@@ -22,8 +22,8 @@ export default function Home() {
   const deleteSiteMutation = trpc.site.delete.useMutation();
   
   // Fetch current version from database
-  const { data: versionData } = trpc.version.current.useQuery();
-  const currentVersion = versionData?.version || "1.7.0";
+  // const { data: versionData } = trpc.version.current.useQuery();
+  const currentVersion = "1.7.0"; // Hardcoded for testing
   
   // Notification count (still from localStorage for now)
   const [notificationCount, setNotificationCount] = useState(0);
