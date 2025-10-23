@@ -1,4 +1,3 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Globe, Trash2, ExternalLink, Settings, Moon, Sun, Bell } from "lucide-react";
@@ -10,8 +9,7 @@ import { NotificationPromptOnInstall } from "@/components/NotificationPromptOnIn
 import { AddSiteDrawer } from "@/components/AddSiteDrawer";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useState, useEffect as React_useEffect } from "react";
-import * as React from "react";
+import { useState } from "react";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
@@ -20,10 +18,7 @@ export default function Home() {
   // Fetch sites from database
   const { data: sites, refetch: refetchSites, isLoading, error } = trpc.site.list.useQuery();
   
-  // Debug logging
-  console.log('[Home] Sites data:', sites);
-  console.log('[Home] Is loading:', isLoading);
-  console.log('[Home] Error:', error);
+
   const deleteSiteMutation = trpc.site.delete.useMutation();
   
   // Fetch current version from database
