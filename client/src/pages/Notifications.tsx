@@ -121,7 +121,7 @@ export default function Notifications() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Notification Permission Prompt */}
-        {permission !== 'granted' && (
+        {permission === 'default' && (
           <Card className="p-6 mb-6 border-border/50 bg-card/50 backdrop-blur-sm">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
@@ -139,6 +139,38 @@ export default function Notifications() {
                   <Bell className="w-4 h-4 mr-2" />
                   Bildirimleri Etkinleştir
                 </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Notification Permission Denied */}
+        {permission === 'denied' && (
+          <Card className="p-6 mb-6 border-destructive/50 bg-destructive/5 backdrop-blur-sm">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                <BellOff className="w-6 h-6 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2 text-destructive">Bildirim İzni Reddedildi</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Bildirimler için tarayıcı izni reddedildi. Bildirimleri etkinleştirmek için:
+                </p>
+                <div className="text-sm text-muted-foreground space-y-2 mb-4">
+                  <p className="font-medium">iOS Safari:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>Ayarlar → Safari → Gelişmiş</li>
+                    <li>Web Sitesi Verileri</li>
+                    <li>Bu siteyi bulun ve silin</li>
+                    <li>Sayfayı yenileyin ve tekrar deneyin</li>
+                  </ol>
+                  <p className="font-medium mt-3">Chrome/Desktop:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>Adres çubuğundaki kilit ikonuna tıklayın</li>
+                    <li>Site Ayarları → Bildirimler</li>
+                    <li>"İzin Ver" seçeneğini seçin</li>
+                  </ol>
+                </div>
               </div>
             </div>
           </Card>
