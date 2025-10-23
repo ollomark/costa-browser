@@ -1,2 +1,1 @@
-web: node server/_core/index.js
-
+web: node dist/index.js
