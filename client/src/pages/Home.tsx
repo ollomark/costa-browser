@@ -17,7 +17,12 @@ export default function Home() {
   const [, setLocation] = useLocation();
   
   // Fetch sites from database
-  const { data: sites, refetch: refetchSites } = trpc.site.list.useQuery();
+  const { data: sites, refetch: refetchSites, isLoading, error } = trpc.site.list.useQuery();
+  
+  // Debug logging
+  console.log('[Home] Sites data:', sites);
+  console.log('[Home] Is loading:', isLoading);
+  console.log('[Home] Error:', error);
   const deleteSiteMutation = trpc.site.delete.useMutation();
   
   // Fetch current version from database
