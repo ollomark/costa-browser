@@ -24,12 +24,6 @@ export default function Home() {
   console.log('[Home] Sites data:', sites);
   console.log('[Home] Is loading:', isLoading);
   console.log('[Home] Error:', error);
-  
-  // Force refetch on mount
-  React.useEffect(() => {
-    console.log('[Home] Forcing refetch...');
-    refetchSites();
-  }, [refetchSites]);
   const deleteSiteMutation = trpc.site.delete.useMutation();
   
   // Fetch current version from database
