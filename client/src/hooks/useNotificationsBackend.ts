@@ -24,7 +24,7 @@ export function useNotificationsBackend() {
       if (Notification.permission === 'granted') {
         registerDevice.mutate({
           deviceId: storedDeviceId,
-          notificationEnabled: true,
+          notificationsEnabled: true,
           userAgent: navigator.userAgent,
         });
       }
@@ -44,7 +44,7 @@ export function useNotificationsBackend() {
         // Register device with backend
         await registerDevice.mutateAsync({
           deviceId,
-          notificationEnabled: true,
+          notificationsEnabled: true,
           userAgent: navigator.userAgent,
         });
       }
