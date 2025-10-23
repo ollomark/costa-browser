@@ -10,7 +10,8 @@ import { NotificationPromptOnInstall } from "@/components/NotificationPromptOnIn
 import { AddSiteDrawer } from "@/components/AddSiteDrawer";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect as React_useEffect } from "react";
+import * as React from "react";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
@@ -23,6 +24,12 @@ export default function Home() {
   console.log('[Home] Sites data:', sites);
   console.log('[Home] Is loading:', isLoading);
   console.log('[Home] Error:', error);
+  
+  // Force refetch on mount
+  React.useEffect(() => {
+    console.log('[Home] Forcing refetch...');
+    refetchSites();
+  }, [refetchSites]);
   const deleteSiteMutation = trpc.site.delete.useMutation();
   
   // Fetch current version from database
@@ -131,7 +138,7 @@ export default function Home() {
             </h2>
           </div>
 
-          {!sites || sites.length === 0 ? (
+          {(!sites || sites.length === 0) ? (
             <Card className="p-12 text-center border-border/50 bg-card/30">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 flex items-center justify-center mx-auto mb-4">
                 <Globe className="w-8 h-8 text-muted-foreground" />
@@ -144,7 +151,7 @@ export default function Home() {
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {sites.map((site) => (
+              {(sites || []).map((site) => (
                 <Card
                   key={site.id}
                   className="group hover:shadow-lg transition-all duration-200 border-border/50 bg-card/50 backdrop-blur-sm hover:border-emerald-500/30"
