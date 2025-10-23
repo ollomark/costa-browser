@@ -1,0 +1,59 @@
+{
+  "name": "CostaBrowser",
+  "description": "Native PWA Browser - Web sitelerinizi uygulama gibi kullanın",
+  "repository": "https://github.com/ollomark/costa-browser",
+  "logo": "https://raw.githubusercontent.com/ollomark/costa-browser/main/client/public/icon-192.png",
+  "keywords": ["pwa", "browser", "web-app", "progressive-web-app", "notifications"],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": [
+    {
+      "plan": "jawsdb:kitefin",
+      "as": "DATABASE"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    },
+    "DATABASE_URL": {
+      "description": "MySQL database URL (automatically set by JawsDB addon)",
+      "required": false
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT token generation",
+      "generator": "secret"
+    },
+    "OAUTH_SERVER_URL": {
+      "description": "OAuth server URL (optional)",
+      "value": "https://api.manus.im",
+      "required": false
+    },
+    "VITE_APP_TITLE": {
+      "description": "Application title",
+      "value": "CostaBrowser"
+    },
+    "VITE_APP_LOGO": {
+      "description": "Application logo URL",
+      "value": "/icon-192.png"
+    },
+    "PORT": {
+      "description": "Port for the web server",
+      "value": "3000"
+    }
+  },
+  "scripts": {
+    "postdeploy": "pnpm db:push"
+  }
+}
+
