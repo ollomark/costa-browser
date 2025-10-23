@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { upsertDevice, getDeviceStats, insertNotification, getAllDevices } from "./deviceDb";
+import { upsertDevice, getDeviceStats, insertNotification, getAllDevices, getNotifications } from "./deviceDb";
 import { insertSite, getAllSites, getSite, deleteSite, updateSite } from "./siteDb";
 import { insertVersion, getCurrentVersion, getAllVersions } from "./versionDb";
 
@@ -45,6 +45,10 @@ export const appRouter = router({
   }),
 
   notification: router({
+    history: publicProcedure.query(async () => {
+      return await getNotifications(50);
+    }),
+
     send: publicProcedure
       .input(
         z.object({
@@ -166,6 +170,21 @@ export const appRouter = router({
           success: true,
           notificationsSent: enabledDevices.length,
         };
+      }),
+  }),
+
+  icon: router({
+    get: publicProcedure.query(async () => {
+      // Return default icon URL
+      return { iconUrl: "/icon-192.png" };
+    }),
+
+    update: publicProcedure
+      .input(z.object({ iconUrl: z.string() }))
+      .mutation(async ({ input }) => {
+        // For now, just return success
+        // In production, you would store this in database or update manifest
+        return { success: true, iconUrl: input.iconUrl };
       }),
   }),
 });
