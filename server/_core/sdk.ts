@@ -275,11 +275,11 @@ class SDKServer {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({
-          id: userInfo.openId,
           openId: userInfo.openId,
           name: userInfo.name || null,
           email: userInfo.email ?? null,
-          lastLoginAt: signedInAt,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          lastSignedIn: signedInAt,
         });
         user = await db.getUser(userInfo.openId);
       } catch (error) {
@@ -293,9 +293,8 @@ class SDKServer {
     }
 
     await db.upsertUser({
-      id: user.id,
       openId: user.openId,
-      lastLoginAt: signedInAt,
+      lastSignedIn: signedInAt,
     });
 
     return user;

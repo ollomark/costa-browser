@@ -26,17 +26,15 @@ export const appRouter = router({
       .input(
         z.object({
           deviceId: z.string(),
-          notificationsEnabled: z.boolean(),
-          subscription: z.string().optional(),
+          notificationEnabled: z.boolean(),
           userAgent: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
         await upsertDevice({
-          id: input.deviceId,
-          notificationsEnabled: input.notificationsEnabled,
-          subscription: input.subscription || null,
-          userAgent: input.userAgent || null,
+          deviceId: input.deviceId,
+          notificationEnabled: input.notificationEnabled ? 1 : 0,
+          userAgent: input.userAgent,
         });
         return { success: true };
       }),
@@ -57,19 +55,19 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         // Get all devices with notifications enabled
         const devices = await getAllDevices();
-        const enabledDevices = devices.filter((d) => d.notificationsEnabled === true);
+        const enabledDevices = devices.filter((d) => d.notificationEnabled === 1);
 
         // Store notification in database
         await insertNotification({
           title: input.title,
           body: input.body,
-          deviceCount: enabledDevices.length,
+          deliveredCount: enabledDevices.length,
         });
 
         return {
           success: true,
           deliveredCount: enabledDevices.length,
-          deviceIds: enabledDevices.map((d) => d.id),
+          deviceIds: enabledDevices.map((d) => d.deviceId),
         };
       }),
   }),
@@ -98,12 +96,12 @@ export const appRouter = router({
         
         // Send notification to all devices
         const devices = await getAllDevices();
-        const enabledDevices = devices.filter((d) => d.notificationsEnabled === true);
+        const enabledDevices = devices.filter((d) => d.notificationEnabled === 1);
         
         await insertNotification({
           title: "Yeni Site Eklendi! 🎉",
           body: `${input.title} başarıyla eklendi`,
-          deviceCount: enabledDevices.length,
+          deliveredCount: enabledDevices.length,
         });
         
         return {
@@ -156,12 +154,12 @@ export const appRouter = router({
         
         // Send update notification to all devices
         const devices = await getAllDevices();
-        const enabledDevices = devices.filter((d) => d.notificationsEnabled === true);
+        const enabledDevices = devices.filter((d) => d.notificationEnabled === 1);
         
         await insertNotification({
           title: "Yeni Versiyon Mevcut!",
           body: `CostaBrowser ${input.version} sürümüne güncellendi. Yeni özellikler için sayfayı yenileyin.`,
-          deviceCount: enabledDevices.length,
+          deliveredCount: enabledDevices.length,
         });
         
         return {

@@ -11,12 +11,12 @@ export async function insertVersion(version: InsertVersion) {
 
   try {
     // Set all versions to not current
-    await db.update(versions).set({ isCurrent: false });
+    await db.update(versions).set({ isCurrent: 0 });
     
     // Insert new version as current
     const result = await db.insert(versions).values({
       ...version,
-      isCurrent: true,
+      isCurrent: 1,
     });
     return result;
   } catch (error) {
@@ -35,7 +35,7 @@ export async function getCurrentVersion() {
   const result = await db
     .select()
     .from(versions)
-    .where(eq(versions.isCurrent, true))
+    .where(eq(versions.isCurrent, 1))
     .limit(1);
 
   return result.length > 0 ? result[0] : null;

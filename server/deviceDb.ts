@@ -16,11 +16,9 @@ export async function upsertDevice(device: InsertDevice) {
         ...device,
         lastSeen: new Date(),
       })
-      .onConflictDoUpdate({
-        target: devices.id,
+      .onDuplicateKeyUpdate({
         set: {
-          notificationsEnabled: device.notificationsEnabled,
-          subscription: device.subscription,
+          notificationEnabled: device.notificationEnabled,
           userAgent: device.userAgent,
           lastSeen: new Date(),
         },
@@ -41,7 +39,7 @@ export async function getDevice(deviceId: string) {
   const result = await db
     .select()
     .from(devices)
-    .where(eq(devices.id, deviceId))
+    .where(eq(devices.deviceId, deviceId))
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
@@ -68,8 +66,8 @@ export async function getDeviceStats() {
   
   return {
     totalDevices: allDevices.length,
-    notificationEnabled: allDevices.filter(d => d.notificationsEnabled === true).length,
-    notificationDisabled: allDevices.filter(d => d.notificationsEnabled === false).length,
+    notificationEnabled: allDevices.filter(d => d.notificationEnabled === 1).length,
+    notificationDisabled: allDevices.filter(d => d.notificationEnabled === 0).length,
   };
 }
 
