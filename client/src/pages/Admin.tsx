@@ -3,39 +3,38 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw, Edit } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowLeft, Plus, Trash2, Send, Bell, RefreshCw, Edit, Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useNotificationsBackend } from "@/hooks/useNotificationsBackend";
 import { trpc } from "@/lib/trpc";
 import { AdminLoginGuard } from "@/components/AdminLoginGuard";
 import { SiteDrawer } from "@/components/SiteDrawer";
 
 interface SavedSite {
-  id: string;
+  id: number;
   url: string;
   title: string;
-  favicon?: string;
-  addedAt: number;
-}
-
-interface Notification {
-  id: string;
-  title: string;
-  body: string;
-  timestamp: number;
-  read: boolean;
+  favicon?: string | null;
+  addedAt: Date;
 }
 
 export default function Admin() {
   const [, setLocation] = useLocation();
-  const { broadcastNotification } = useNotificationsBackend();
+  
+  // tRPC queries and mutations
+  const { data: sites, refetch: refetchSites } = trpc.site.list.useQuery();
   const { data: deviceStats } = trpc.device.stats.useQuery();
   const { data: versionData } = trpc.version.current.useQuery();
+  const { data: notifications } = trpc.notification.history.useQuery();
+  const { data: iconData } = trpc.icon.get.useQuery();
+  
+  const addSiteMutation = trpc.site.add.useMutation();
+  const updateSiteMutation = trpc.site.update.useMutation();
+  const deleteSiteMutation = trpc.site.delete.useMutation();
+  const sendNotificationMutation = trpc.notification.send.useMutation();
   const updateVersionMutation = trpc.version.update.useMutation();
-  const [sites, setSites] = useState<SavedSite[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const updateIconMutation = trpc.icon.update.useMutation();
   
   // Site management
   const [editingSite, setEditingSite] = useState<SavedSite | null>(null);
@@ -49,76 +48,70 @@ export default function Admin() {
   // Version management
   const currentVersion = versionData?.version || "1.7.0";
   const [newVersion, setNewVersion] = useState("");
-  const [releaseNotes, setReleaseNotes] = useState("");
+  
+  // Icon management
+  const [newIconUrl, setNewIconUrl] = useState("");
   
   // Notification delivery tracking
   const [lastDeliveryCount, setLastDeliveryCount] = useState(0);
 
-  useEffect(() => {
-    loadSites();
-    loadNotifications();
-  }, []);
-
-  const loadSites = () => {
-    const stored = localStorage.getItem("pwa-browser-sites");
-    if (stored) {
-      setSites(JSON.parse(stored));
-    }
-  };
-
-  const loadNotifications = () => {
-    const stored = localStorage.getItem("pwa-browser-notifications");
-    if (stored) {
-      setNotifications(JSON.parse(stored));
-    }
-  };
-
-  const saveSites = (updatedSites: SavedSite[]) => {
-    localStorage.setItem("pwa-browser-sites", JSON.stringify(updatedSites));
-    setSites(updatedSites);
-    toast.success("Siteler güncellendi");
-  };
-
-  const handleAddSite = () => {
+  const handleAddSite = async () => {
     if (!siteTitle || !siteUrl) {
       toast.error("Lütfen tüm alanları doldurun");
       return;
     }
 
-    const newSite: SavedSite = {
-      id: Date.now().toString(),
-      title: siteTitle,
-      url: siteUrl,
-      favicon: `https://www.google.com/s2/favicons?domain=${new URL(siteUrl).hostname}&sz=64`,
-      addedAt: Date.now(),
-    };
-
-    saveSites([...sites, newSite]);
-    setSiteTitle("");
-    setSiteUrl("");
+    try {
+      await addSiteMutation.mutateAsync({
+        title: siteTitle,
+        url: siteUrl,
+        favicon: `https://www.google.com/s2/favicons?domain=${new URL(siteUrl).hostname}&sz=64`,
+      });
+      
+      toast.success("Site başarıyla eklendi!");
+      setSiteTitle("");
+      setSiteUrl("");
+      refetchSites();
+    } catch (error) {
+      toast.error("Site eklenemedi!");
+      console.error(error);
+    }
   };
 
-  const handleUpdateSite = () => {
+  const handleUpdateSite = async () => {
     if (!editingSite || !siteTitle || !siteUrl) {
       toast.error("Lütfen tüm alanları doldurun");
       return;
     }
 
-    const updatedSites = sites.map(site =>
-      site.id === editingSite.id
-        ? { ...site, title: siteTitle, url: siteUrl }
-        : site
-    );
-
-    saveSites(updatedSites);
-    setEditingSite(null);
-    setSiteTitle("");
-    setSiteUrl("");
+    try {
+      await updateSiteMutation.mutateAsync({
+        id: editingSite.id,
+        title: siteTitle,
+        url: siteUrl,
+        favicon: `https://www.google.com/s2/favicons?domain=${new URL(siteUrl).hostname}&sz=64`,
+      });
+      
+      toast.success("Site başarıyla güncellendi!");
+      setEditingSite(null);
+      setSiteTitle("");
+      setSiteUrl("");
+      refetchSites();
+    } catch (error) {
+      toast.error("Site güncellenemedi!");
+      console.error(error);
+    }
   };
 
-  const handleDeleteSite = (id: string) => {
-    const updatedSites = sites.filter(site => site.id !== id);
-    saveSites(updatedSites);
+  const handleDeleteSite = async (id: number) => {
+    try {
+      await deleteSiteMutation.mutateAsync({ id });
+      toast.success("Site silindi!");
+      refetchSites();
+    } catch (error) {
+      toast.error("Site silinemedi!");
+      console.error(error);
+    }
   };
 
   const handleEditSite = (site: SavedSite) => {
@@ -133,31 +126,20 @@ export default function Admin() {
       return;
     }
 
-    // Save to history
-    const newNotif: Notification = {
-      id: Date.now().toString(),
-      title: notifTitle,
-      body: notifBody,
-      timestamp: Date.now(),
-      read: false,
-    };
-
-    const updatedNotifications = [newNotif, ...notifications];
-    localStorage.setItem("pwa-browser-notifications", JSON.stringify(updatedNotifications));
-    setNotifications(updatedNotifications);
-
-    // Send push notification
-    const result = await broadcastNotification(notifTitle, notifBody);
-    
-    if (result) {
+    try {
+      const result = await sendNotificationMutation.mutateAsync({
+        title: notifTitle,
+        body: notifBody,
+      });
+      
       setLastDeliveryCount(result.deliveredCount);
       toast.success(`Bildirim gönderildi! ${result.deliveredCount} cihaza ulaştı.`);
-    } else {
+      setNotifTitle("");
+      setNotifBody("");
+    } catch (error) {
       toast.error("Bildirim gönderilemedi!");
+      console.error(error);
     }
-    
-    setNotifTitle("");
-    setNotifBody("");
   };
 
   const handleVersionUpdate = async () => {
@@ -169,14 +151,28 @@ export default function Admin() {
     try {
       const result = await updateVersionMutation.mutateAsync({
         version: newVersion,
-        releaseNotes: releaseNotes || undefined,
       });
 
       toast.success(`Versiyon ${newVersion} olarak güncellendi! ${result.notificationsSent} cihaza bildirim gönderildi.`);
       setNewVersion("");
-      setReleaseNotes("");
     } catch (error) {
       toast.error("Versiyon güncellenemedi");
+      console.error(error);
+    }
+  };
+
+  const handleIconUpdate = async () => {
+    if (!newIconUrl) {
+      toast.error("Lütfen ikon URL'i girin");
+      return;
+    }
+
+    try {
+      await updateIconMutation.mutateAsync({ iconUrl: newIconUrl });
+      toast.success("İkon başarıyla güncellendi!");
+      setNewIconUrl("");
+    } catch (error) {
+      toast.error("İkon güncellenemedi!");
       console.error(error);
     }
   };
@@ -204,6 +200,53 @@ export default function Admin() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+        {/* Icon Management */}
+        <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+              <ImageIcon className="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Uygulama İkonu</h2>
+              <p className="text-sm text-muted-foreground">Uygulama ikonunu özelleştirin</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <img 
+                src={iconData?.iconUrl || "/icon-192.png"} 
+                alt="Current Icon"
+                className="w-16 h-16 rounded-lg"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Mevcut İkon</p>
+                <p className="text-xs text-muted-foreground">{iconData?.iconUrl || "/icon-192.png"}</p>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="icon-url">Yeni İkon URL</Label>
+              <Input
+                id="icon-url"
+                value={newIconUrl}
+                onChange={(e) => setNewIconUrl(e.target.value)}
+                placeholder="https://example.com/icon.png"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                192x192 veya 512x512 boyutlarında PNG formatında olmalı
+              </p>
+            </div>
+            <Button
+              onClick={handleIconUpdate}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            >
+              <ImageIcon className="w-4 h-4 mr-2" />
+              İkonu Güncelle
+            </Button>
+          </div>
+        </Card>
+
         {/* Version Management */}
         <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
           <div className="flex items-center gap-3 mb-4">
@@ -313,13 +356,11 @@ export default function Admin() {
             </div>
             <div>
               <h2 className="text-lg font-semibold">Site Yönetimi</h2>
-              <p className="text-sm text-muted-foreground">
-                {editingSite ? "Site düzenle" : "Yeni site ekle"}
-              </p>
+              <p className="text-sm text-muted-foreground">Yeni site ekle</p>
             </div>
           </div>
 
-          <div className="space-y-3 mb-6">
+          <div className="space-y-3">
             <div>
               <Label htmlFor="site-title">Site Adı</Label>
               <Input
@@ -340,79 +381,63 @@ export default function Admin() {
                 className="mt-1"
               />
             </div>
-            <div className="flex gap-2">
-              {editingSite ? (
-                <>
-                  <Button
-                    onClick={handleUpdateSite}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
-                  >
-                    Güncelle
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setEditingSite(null);
-                      setSiteTitle("");
-                      setSiteUrl("");
-                    }}
-                    variant="outline"
-                  >
-                    İptal
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={handleAddSite}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Site Ekle
-                </Button>
-              )}
-            </div>
+            <Button
+              onClick={editingSite ? handleUpdateSite : handleAddSite}
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {editingSite ? "Siteyi Güncelle" : "Site Ekle"}
+            </Button>
+            {editingSite && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingSite(null);
+                  setSiteTitle("");
+                  setSiteUrl("");
+                }}
+                className="w-full"
+              >
+                İptal
+              </Button>
+            )}
           </div>
 
           {/* Sites List */}
-          <div className="space-y-2">
-            <h3 className="font-medium text-sm text-muted-foreground mb-2">
-              Kayıtlı Siteler ({sites.length})
-            </h3>
-            {sites.map((site) => (
-              <div
-                key={site.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/30"
-              >
-                <img
-                  src={site.favicon}
-                  alt={site.title}
-                  className="w-8 h-8 rounded"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://via.placeholder.com/32";
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{site.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{site.url}</p>
-                </div>
-                <div className="flex gap-1">
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold mb-3">Kayıtlı Siteler ({sites?.length || 0})</h3>
+            <div className="space-y-2">
+              {sites?.map((site) => (
+                <div
+                  key={site.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
+                >
+                  <img
+                    src={site.favicon || "/icon-192.png"}
+                    alt={site.title}
+                    className="w-10 h-10 rounded-lg"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{site.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{site.url}</p>
+                  </div>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleEditSite(site)}
                   >
-                    Düzenle
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleDeleteSite(site.id)}
-                    className="text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 text-red-400" />
                   </Button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </Card>
 
@@ -420,25 +445,23 @@ export default function Admin() {
         <Card className="p-6 border-border/50 bg-card/50 backdrop-blur-sm">
           <h2 className="text-lg font-semibold mb-4">Bildirim Geçmişi</h2>
           <div className="space-y-2">
-            {notifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Henüz bildirim gönderilmedi
-              </p>
-            ) : (
-              notifications.slice(0, 10).map((notif) => (
+            {notifications && notifications.length > 0 ? (
+              notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  className="p-3 rounded-lg border border-border/50 bg-muted/30"
+                  className="p-3 rounded-lg bg-muted/30 border border-border/50"
                 >
-                  <div className="flex items-start justify-between mb-1">
-                    <p className="font-medium">{notif.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(notif.timestamp).toLocaleString("tr-TR")}
-                    </p>
-                  </div>
+                  <p className="font-medium">{notif.title}</p>
                   <p className="text-sm text-muted-foreground">{notif.body}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(notif.sentAt).toLocaleString('tr-TR')} • {notif.deviceCount} cihaz
+                  </p>
                 </div>
               ))
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Henüz bildirim gönderilmedi
+              </p>
             )}
           </div>
         </Card>

@@ -108,3 +108,6 @@ temp/
 
 # Local Netlify folder
 .netlify
+
+# Manus internal files
+.manus/
