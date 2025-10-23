@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "declaration": false
+  },
+  "include": ["server/**/*", "shared/**/*", "drizzle/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "client"]
+}
+
