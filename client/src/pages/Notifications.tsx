@@ -4,6 +4,7 @@ import { ArrowLeft, Bell, BellOff, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useNotificationsBackend } from "@/hooks/useNotificationsBackend";
 
 interface Notification {
   id: string;
@@ -16,6 +17,7 @@ interface Notification {
 export default function Notifications() {
   const [, setLocation] = useLocation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { permission, requestPermission, isEnabled } = useNotificationsBackend();
 
   useEffect(() => {
     loadNotifications();
@@ -57,6 +59,15 @@ export default function Notifications() {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      toast.success("Bildirimler etkinleştirildi!");
+    } else {
+      toast.error("Bildirim izni reddedildi");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -109,6 +120,30 @@ export default function Notifications() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-2xl">
+        {/* Notification Permission Prompt */}
+        {permission !== 'granted' && (
+          <Card className="p-6 mb-6 border-border/50 bg-card/50 backdrop-blur-sm">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                <Bell className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2">Bildirimleri Etkinleştir</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Yeni site eklemeleri ve güncellemeler hakkında anında bildirim almak için bildirimleri etkinleştirin.
+                </p>
+                <Button
+                  onClick={handleEnableNotifications}
+                  className="w-full sm:w-auto"
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Bildirimleri Etkinleştir
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {notifications.length === 0 ? (
           <Card className="p-12 text-center border-border/50 bg-card/50 backdrop-blur-sm">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center mx-auto mb-4">
